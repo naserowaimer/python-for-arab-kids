@@ -397,15 +397,6 @@ pre {
     border-bottom-color: var(--accent-primary);
 }
 
-.mission-editor {
-    height: 250px;
-    width: 100%;
-    border: 1px solid var(--bg-tertiary);
-    border-radius: var(--border-radius);
-    margin-top: 1rem;
-    position: relative;
-}
-
 .mission-controls {
     margin-top: 1rem;
     display: flex;
@@ -724,9 +715,10 @@ pre {
     border: 1px solid var(--bg-tertiary);
 }
 
-.mission-editor {
-    height: 250px; /* You can adjust this height */
+.mission-editor, .example-editor {
+    height: 250px;
     width: 100%;
+    border: 1px solid var(--bg-tertiary);
     border-radius: var(--border-radius);
     margin-top: 1rem;
     position: relative;

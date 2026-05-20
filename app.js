@@ -152,7 +152,7 @@ const App = {
     enhanceContentBlocks() {
         // Find all <pre><code> blocks that are direct children of the content area.
         // The markdown library creates this structure.
-        document.querySelectorAll('#content-area > pre').forEach(preElement => {
+        document.querySelectorAll('#content-area > pre').forEach((preElement, idx) => {
             const codeElement = preElement.querySelector('code.language-python');
             
             // If the block is not a python block, or has already been enhanced, skip it.
@@ -162,10 +162,8 @@ const App = {
 
             // Mark as enhanced to prevent re-processing
             preElement.classList.add('enhanced');
+            const code = codeElement.textContent;
             
-            // Activate syntax highlighting
-            hljs.highlightElement(codeElement);
-
             // Now, build the wrapper component
             const wrapper = document.createElement('div');
             wrapper.className = 'code-block-wrapper';
@@ -175,19 +173,42 @@ const App = {
             header.innerHTML = `
                 <span>Python</span>
                 <div class="code-block-buttons">
-                    <button class="copy-btn">نسخ</button>
                     <button class="run-btn">شغّل الكود</button>
                 </div>
             `;
 
+            const editorContainer = document.createElement('div');
+            editorContainer.className = 'example-editor';
+            const editorId = `example-editor-${idx}`;
+            editorContainer.id = editorId;
+
             const output = document.createElement('pre');
             output.className = 'code-output';
             
-            // Move the <pre> tag into the wrapper, then build the rest
+            // Move the elements into the wrapper
             preElement.parentNode.insertBefore(wrapper, preElement);
             wrapper.appendChild(header);
-            wrapper.appendChild(preElement);
+            wrapper.appendChild(editorContainer);
             wrapper.appendChild(output);
+            preElement.remove(); // Remove the original static element
+
+            // Initialize CodeMirror for this example
+            const editorInstance = CodeMirror(editorContainer, {
+                value: code.trim(),
+                mode: 'python',
+                theme: 'material-darker',
+                lineNumbers: true,
+                matchBrackets: true,
+                indentUnit: 4
+            });
+
+            // Store the instance so we can get its value later
+            this.editors[editorId] = editorInstance;
+            
+            // A slight delay to ensure the editor has rendered
+            setTimeout(() => {
+                editorInstance.refresh();
+            }, 1);
         });
     },
     
@@ -715,6 +736,22 @@ addEventListeners() {
                 tabBtn.classList.add('active');
                 const targetId = tabBtn.getAttribute('data-tab');
                 document.getElementById(targetId).classList.add('active');
+                return;
+            }
+
+            // --- 8. Check for Example Run Button ---
+            const exampleRunBtn = e.target.closest('.code-block-wrapper .run-btn');
+            if (exampleRunBtn) {
+                console.log("Click identified as: Example Run Button.");
+                const wrapper = exampleRunBtn.closest('.code-block-wrapper');
+                const editorContainer = wrapper.querySelector('.example-editor');
+                const outputEl = wrapper.querySelector('.code-output');
+                const editorId = editorContainer.id;
+                const editor = this.editors[editorId];
+                
+                if (editor) {
+                    this.runCode(editor.getValue(), outputEl);
+                }
                 return;
             }
 
