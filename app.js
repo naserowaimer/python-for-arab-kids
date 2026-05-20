@@ -698,7 +698,7 @@ addEventListeners() {
             // If we reached here, the click was not on any of our targets.
             console.log("Click was not on a recognized target.");
         });
-    }
+    },
 
 
     // --- Profile Modal & History ---
