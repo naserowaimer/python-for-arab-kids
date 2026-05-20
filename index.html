@@ -71,6 +71,12 @@
                         </div>
                         <span id="player-xp">0/100</span>
                     </div>
+                     <button class="profile-btn" id="profile-btn" title="الملف الشخصي والإنجازات">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                          <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z"/>
+                        </svg>
+                    </button>
                      <button class="reset-progress" id="reset-progress" title="إعادة تعيين التقدم">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                           <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
@@ -88,6 +94,30 @@
         </div>
     </div>
    
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 style="color: var(--accent-secondary); margin-bottom: 1rem; font-weight: 900;">ملفك الشخصي</h2>
+            
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="achievements-tab">الإنجازات</button>
+                <button class="tab-btn" data-tab="history-tab">سجل المهام</button>
+            </div>
+
+            <div id="achievements-tab" class="tab-content active">
+                <div class="achievements-grid" id="achievements-grid">
+                    <!-- Achievements generated here -->
+                </div>
+            </div>
+
+            <div id="history-tab" class="tab-content">
+                <div class="history-list" id="history-list">
+                    <!-- History generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script type="module" src="./main.js"></script>
 </body>

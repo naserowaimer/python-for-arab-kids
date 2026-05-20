@@ -11,7 +11,8 @@ const App = {
         level: 1,
         currentChapterId: 'intro',
         completedChapters: [],
-        unlockedAchievements: []
+        unlockedAchievements: [],
+        taskHistory: []
     },
     editors: {},
 
@@ -82,7 +83,9 @@ const App = {
             
             const isCompleted = this.state.completedChapters.includes(chapter.id);
             const isActive = this.state.currentChapterId === chapter.id;
-            const isLocked = index >= 2 && !this.state.completedChapters.includes(DB.chapters[index - 1].id);
+            
+            // Lock if it's not the first chapter and the previous one isn't completed
+            const isLocked = index > 0 && !this.state.completedChapters.includes(DB.chapters[index - 1].id);
 
             if (isActive) li.classList.add('active');
             if (isCompleted) li.classList.add('completed');
@@ -100,8 +103,8 @@ const App = {
         if (!chapter) return;
         
         const chapterIndex = DB.chapters.findIndex(c => c.id === chapterId);
-        // CORRECTED BUG: Used 'index' instead of 'chapterIndex'
-        const isLocked = chapterIndex >= 2 && !this.state.completedChapters.includes(DB.chapters[chapterIndex - 1].id);
+        const isLocked = chapterIndex > 0 && !this.state.completedChapters.includes(DB.chapters[chapterIndex - 1].id);
+        
         if (isLocked) {
             this.showToast('error', 'الفصل مقفل!', 'أكمل الفصل السابق لفتح هذا الفصل.');
             return;
@@ -225,13 +228,13 @@ const App = {
 
 
     renderCertificate() {
-        console.log("renderCertificate: I am being called!"); // LOG
+        console.log("renderCertificate: I am being called!");
         const certSection = document.getElementById('certificate-section');
         if (!certSection) return;
 
         certSection.innerHTML = `
-        <div class="certificate-container" style="background: var(--bg-primary); border: none; padding: 1rem;">
-            <canvas id="certificateCanvas" style="width: 100%; max-width: 800px; border-radius: var(--border-radius);"></canvas>
+        <div class="certificate-container">
+            <canvas id="certificateCanvas"></canvas>
             <div class="mission-controls" style="justify-content: center; margin-top: 1rem;">
                 <button class="mission-btn download-cert-btn" id="download-cert-btn">تحميل الشهادة</button>
             </div>
@@ -254,8 +257,6 @@ const App = {
         const dpr = window.devicePixelRatio || 1;
         canvas.width = certWidth * dpr;
         canvas.height = certHeight * dpr;
-        canvas.style.width = `${certWidth}px`; // Set display size
-        canvas.style.height = `${certHeight}px`;
         ctx.scale(dpr, dpr);
 
         // Since we don't have a background image, we draw the elements directly.
@@ -489,6 +490,14 @@ const App = {
         if (validation.pass) {
             this.state.completedChapters.push(chapterId);
             
+            // Add to history
+            this.state.taskHistory.push({
+                chapterId: chapterId,
+                chapterTitle: chapter.title,
+                code: code,
+                timestamp: new Date().toISOString()
+            });
+            
             let xpGained = 100;
             const achievementMap = {
                 'chapter1': 'first_code', 'chapter2': 'variable_tamer', 'chapter3': 'logic_master',
@@ -653,11 +662,111 @@ addEventListeners() {
                 return; // Stop processing
             }
 
+            // --- 6. Check for Profile Modal Triggers ---
+            const profileBtn = e.target.closest('#profile-btn');
+            if (profileBtn) {
+                this.openProfileModal();
+                return;
+            }
+
+            const closeBtn = e.target.closest('.close-modal');
+            if (closeBtn) {
+                this.closeProfileModal();
+                return;
+            }
+
+            // Also close if clicking outside modal content
+            if (e.target.id === 'profile-modal') {
+                this.closeProfileModal();
+                return;
+            }
+
+            // --- 7. Check for Modal Tabs ---
+            const tabBtn = e.target.closest('.tab-btn');
+            if (tabBtn) {
+                // Remove active from all tabs and contents
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Add active to clicked tab and corresponding content
+                tabBtn.classList.add('active');
+                const targetId = tabBtn.getAttribute('data-tab');
+                document.getElementById(targetId).classList.add('active');
+                return;
+            }
+
             // If we reached here, the click was not on any of our targets.
             console.log("Click was not on a recognized target.");
         });
     }
 
+
+    // --- Profile Modal & History ---
+    openProfileModal() {
+        const modal = document.getElementById('profile-modal');
+        if (modal) {
+            this.renderAchievements();
+            this.renderHistory();
+            modal.style.display = 'block';
+        }
+    },
+    
+    closeProfileModal() {
+        const modal = document.getElementById('profile-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    },
+
+    renderAchievements() {
+        const grid = document.getElementById('achievements-grid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        
+        Object.keys(DB.achievements).forEach(id => {
+            const ach = DB.achievements[id];
+            const isUnlocked = this.state.unlockedAchievements.includes(id);
+            
+            const card = document.createElement('div');
+            card.className = `achievement-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+            card.innerHTML = `
+                <span class="icon">${ach.icon}</span>
+                <h4>${ach.title}</h4>
+                <p>${isUnlocked ? ach.description : '???'}</p>
+            `;
+            grid.appendChild(card);
+        });
+    },
+
+    renderHistory() {
+        const list = document.getElementById('history-list');
+        if (!list) return;
+        list.innerHTML = '';
+        
+        if (!this.state.taskHistory || this.state.taskHistory.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">لا توجد مهام منجزة حتى الآن.</p>';
+            return;
+        }
+
+        // Show newest first
+        [...this.state.taskHistory].reverse().forEach(task => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            const date = new Date(task.timestamp).toLocaleString('ar-EG');
+            
+            item.innerHTML = `
+                <h4>${task.chapterTitle}</h4>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">${date}</span>
+                <pre><code class="language-python">${task.code}</code></pre>
+            `;
+            list.appendChild(item);
+        });
+        
+        // Re-run highlighting for history blocks
+        list.querySelectorAll('pre code').forEach(block => {
+            hljs.highlightElement(block);
+        });
+    }
 
 };
 export default App;
