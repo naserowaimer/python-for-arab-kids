@@ -21,12 +21,23 @@ const App = {
         this.loadState();
         this.addEventListeners(); 
         
+        // Show a warning if loading takes too long
+        const loadingTimeout = setTimeout(() => {
+            const loaderText = document.querySelector('#loader p');
+            if (loaderText && !this.isReady) {
+                loaderText.innerHTML = "يبدو أن التحميل يستغرق وقتًا طويلاً...<br>يرجى التأكد من اتصالك بالإنترنت أو محاولة تعطيل إضافات المتصفح (Extensions).";
+                loaderText.style.color = 'var(--accent-primary)';
+            }
+        }, 8000);
+
         try {
             await this.initPyodide();
+            clearTimeout(loadingTimeout);
             this.isReady = true; // Pyodide is now ready!
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
         } catch (error) {
+            clearTimeout(loadingTimeout);
             console.error("Pyodide failed to load:", error);
             const loaderText = document.querySelector('#loader p');
             loaderText.textContent = "عذرًا، حدث خطأ أثناء تحميل المعمل الرقمي. يرجى تحديث الصفحة.";
@@ -61,9 +72,21 @@ const App = {
         localStorage.setItem('pythonJourneyState', JSON.stringify(this.state));
     },
     loadState() {
-        const savedState = localStorage.getItem('pythonJourneyState');
-        if (savedState) {
-            this.state = { ...this.state, ...JSON.parse(savedState) };
+        try {
+            const savedState = localStorage.getItem('pythonJourneyState');
+            if (savedState) {
+                const parsed = JSON.parse(savedState);
+                this.state = { 
+                    ...this.state, 
+                    ...parsed,
+                    // Ensure these are always arrays even if saved state is weird
+                    completedChapters: Array.isArray(parsed.completedChapters) ? parsed.completedChapters : [],
+                    unlockedAchievements: Array.isArray(parsed.unlockedAchievements) ? parsed.unlockedAchievements : [],
+                    taskHistory: Array.isArray(parsed.taskHistory) ? parsed.taskHistory : []
+                };
+            }
+        } catch (e) {
+            console.error("Failed to load state:", e);
         }
     },
     resetState() {
@@ -743,13 +766,15 @@ addEventListeners() {
         if (!list) return;
         list.innerHTML = '';
         
-        if (!this.state.taskHistory || this.state.taskHistory.length === 0) {
+        const history = Array.isArray(this.state.taskHistory) ? this.state.taskHistory : [];
+        
+        if (history.length === 0) {
             list.innerHTML = '<p style="text-align:center; color: var(--text-secondary);">لا توجد مهام منجزة حتى الآن.</p>';
             return;
         }
 
         // Show newest first
-        [...this.state.taskHistory].reverse().forEach(task => {
+        [...history].reverse().forEach(task => {
             const item = document.createElement('div');
             item.className = 'history-item';
             const date = new Date(task.timestamp).toLocaleString('ar-EG');
