@@ -107,8 +107,8 @@ const App = {
             const isCompleted = this.state.completedChapters.includes(chapter.id);
             const isActive = this.state.currentChapterId === chapter.id;
             
-            // Lock if it's not the first chapter and the previous one isn't completed
-            const isLocked = index > 0 && !this.state.completedChapters.includes(DB.chapters[index - 1].id);
+            // Lock if it's past Chapter 1 and the previous one isn't completed
+            const isLocked = index > 1 && !this.state.completedChapters.includes(DB.chapters[index - 1].id);
 
             if (isActive) li.classList.add('active');
             if (isCompleted) li.classList.add('completed');
@@ -126,7 +126,7 @@ const App = {
         if (!chapter) return;
         
         const chapterIndex = DB.chapters.findIndex(c => c.id === chapterId);
-        const isLocked = chapterIndex > 0 && !this.state.completedChapters.includes(DB.chapters[chapterIndex - 1].id);
+        const isLocked = chapterIndex > 1 && !this.state.completedChapters.includes(DB.chapters[chapterIndex - 1].id);
         
         if (isLocked) {
             this.showToast('error', 'الفصل مقفل!', 'أكمل الفصل السابق لفتح هذا الفصل.');
